@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vueground - Vue Guide Part 2 - Computed and Watchers</title>
+  <script src="https://unpkg.com/lodash/lodash.min.js"></script>
+  <script src="vendor/vue.js"></script>
+</head>
+<body>
+<div id="async-example">
+  <input v-model="question" type="text" />
+  <div>{{ answer }}</div>
+</div>
+<hr />
+<div id="example">
+  <p>Original message: "{{ message }}"</p>
+  <p>Computed reversed message: "{{ reversedMessage }}"</p>
+  <p>Full Name: {{ fullName }}</p>
+  <p>First Name: {{ firstName }}</p>
+  <p>Last Name: {{ lastName }}</p>
+</div>
+<script>
+  const vm =  new Vue({
+    el: '#async-example',
+    data: {
+      question: '',
+      answer: 'Please type a question'
+    },
+    watch: {
+      question: function() {
+        this.answer = 'Waiting to finish typing...'
+        this.findAnswer()
+      }
+    },
+    methods: {
+
+      findAnswer: _.debounce(function() {
+        if (this.question.indexOf('?') === -1) {
+          this.answer = 'Questions usually contain a question mark. ;-)'
+          return
+        }
+
+        this.answer = 'Thinking hard.'
+        fetch('https://yesno.wtf/api').then(res => res.json()).then(json => this.answer = json.answer)
+      }, 500),
+    }
+  })
+
+  const vm2 = new Vue({
+    el: '#example',
+    data: {
+      message: 'A message to you!',
+      firstName: 'John',
+      lastName: 'Smith'
+    },
+    computed: {
+      reversedMessage: function() {
+        return this.message.split('').reverse().join('')
+      },
+      fullName: {
+        get: function() {
+          return this.firstName + ' ' + this.lastName
+        },
+        set: function(fullName) {
+          this.firstName = fullName.split(' ')[0]
+          this.lastName = fullName.split(' ')[1]
+        }
+      }
+    }
+  })
+</script>
+</body>
+</html>
