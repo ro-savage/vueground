@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vueground - Guide Part 1</title>
+  <script src="vendor/vue.js"></script>
+</head>
+<body>
+<div id="app">{{ message }}</div>
+<div id="app2">
+  <span v-bind:title="message">
+    Hover me
+  </span>
+</div>
+<div id="app3">
+  <p v-if="seen">Now you see me</p>
+</div>
+<div id="app4">
+  <ol>
+    <li v-for="todo in todos">
+      {{ todo.message }}
+    </li>
+  </ol>
+</div>
+<div id="app5">
+  <p>{{ message }}</p>
+  <button v-on:click="reverseMessage">Reverse Message</button>
+</div>
+<div id="app6">
+  <p>{{ message }}</p>
+  <input type="text" v-model="message" />
+</div>
+<div id="app7">
+  <ol>
+    <todo-item v-for="item in list" v-bind:todo="item"></todo-item>
+  </ol>
+</div>
+<script>
+  let app = new Vue({
+    el: '#app',
+    data: {
+      message: 'Hello Vue'
+    }
+  })
+
+  let app2 =  new Vue({
+    el: '#app2',
+    data: {
+      message: `this page was loaded on ${new Date()}`
+    }
+  })
+
+  let app3 =  new Vue({
+    el: '#app3',
+    data: {
+      seen: true,
+    }
+  })
+
+  let app4 = new Vue({
+    el: '#app4',
+    data: {
+      todos: [
+        {message: 'The first todo'},
+        {message: 'The second todo'},
+        {message: 'The last todo'},
+      ]
+    }
+  })
+
+  let app5 = new Vue({
+    el: '#app5',
+    data: {
+      message: 'Reverse me!'
+    },
+    methods: {
+      reverseMessage: function() {
+        this.message = this.message.split('').reverse().join('')
+      }
+    }
+  })
+
+  let app6 = new Vue({
+    el: '#app6',
+    data: {
+      message: 'Some input',
+    }
+  })
+
+  Vue.component('todo-item', {
+    props: ['todo'],
+    template: '<li>{{ todo.text }}</li>'
+  })
+
+  let app7 = new Vue({
+    el: '#app7',
+    data: {
+      'list': [
+        { text: 'First item'},
+        { text: 'Second item'},
+        { text: 'Third item'},
+      ]
+    }
+  })
+</script>
+</body>
+</html>
