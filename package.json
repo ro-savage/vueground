@@ -1,0 +1,22 @@
+{
+  "name": "vueground",
+  "version": "1.0.0",
+  "description": "Vue.js Playground",
+  "main": "config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ro-savage/vueground.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ro-savage/vueground/issues"
+  },
+  "homepage": "https://github.com/ro-savage/vueground#readme",
+  "dependencies": {
+    "vue-virtual-scroller": "^0.6.1"
+  }
+}

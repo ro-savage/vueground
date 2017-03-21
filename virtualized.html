@@ -3,15 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <title>Vueground</title>
+  <link rel="stylesheet" href="node_modules/vue-virtual-scroller/dist/vue-virtual-scroller.css"/>
   <script src="vendor/firebase.js"></script>
   <script src="config.js"></script>
   <script src="vendor/vue.js"></script>
+  <script src="node_modules/vue-virtual-scroller/dist/vue-virtual-scroller.js"></script>
   <style>
     .seat {
       background: lightblue;
       border: 1px solid black;
       width: 30px;
-      height: 30px;
+      height: 28px;
       cursor: pointer;
     }
 
@@ -42,19 +44,31 @@
       width: 1000px;
       flex-wrap: wrap;
     }
+
+    .items {
+      display: flex;
+      width: 1000px !important;
+      flex-wrap: wrap;
+    }
+
   </style>
 </head>
 <body>
-<h2>Tickets Available: <span id="totalAvailable">0</span></h2>
-<button id="restart">Restart Check (<span id="countdown">0</span>)</button>
-<div id="seatplan">
-  <seat v-for="value in tickets" :key="value.id" :id="value.id" :available="value.available"></seat>
+<div id="vue">
+  <virtual-scroller class="scroller" :items="tickets" item-height="1" content-tag="div">
+    <template scope="props">
+      <seat :id="props.item.id" :available="props.item.available"></seat>
+    </template>
+  </virtual-scroller>
+  <br><br>
+  <hr>
+  <br><br>
+  <!--<div id="seatplan">-->
+    <!--<seat v-for="value in tickets" :key="value.id" :id="value.id" :available="value.available"></seat>-->
+  <!--</div>-->
 </div>
 
 <script>
-
-  let countdown = 0;
-
   firebase.initializeApp(FIREBASE_CONFIG);
 
   // Get a reference to the database service
@@ -62,7 +76,7 @@
 
   const createNewTickets = (eventId, ticketStart, ticketStop ) => {
 
-    const tickets = []
+    const tickets = {}
 
     for (let i = ticketStart; i <= ticketStop; i++) {
       tickets[i] = {
@@ -90,66 +104,13 @@
 
   const fbEvents = firebase.database().ref(`/tickets/${EVENT_ID}`).once('value', function(snapshot) {
     const val = snapshot.val()
-
-    // if there is less 1000 tickets
-    // display seats
-    // Otherwise just display total
-    if(val.tickets.length < 1000) {
-      createSeats(val.tickets)
-      createEventSocket()
-    }
+    createSeats(val.tickets)
   });
 
-  function createEventSocket() {
-    firebase.database().ref(`/tickets/${EVENT_ID}/tickets`).on('child_changed', function(snapshot) {
-      const val = snapshot.val()
-      updateSeat(val)
-    });
-  }
-
-  function getAvailableTickets() {
-    firebase.database().ref(`/tickets/${EVENT_ID}/availableTickets`).on('value', function(snapshot) {
-      const val = snapshot.val()
-      console.log('available', val)
-      document.querySelector('#totalAvailable').innerText = val
-    });
-  }
-
-  getAvailableTickets()
-
-  function updateAvailableTickets() {
-    fetch(`https://us-central1-functions-56eb1.cloudfunctions.net/updateAvailableTickets?eventid=${EVENT_ID}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if(!json || json.error) {
-          console.log('json error', json)
-        } else {
-          console.log('Updated Available Tickets', json)
-        }
-      }).catch(err => {
-      console.log('catch err', err)
-    })
-  }
-
-  updateAvailableTickets()
-
-  function startCheckingTime() {
-    countdown = 120000
-    const updateAvailableTicketsInterval = setInterval(updateAvailableTickets, 5000)
-
-    const countDownTimer = setInterval(() => {
-      countdown = countdown - 1000
-      document.querySelector('#countdown').innerText = (countdown / 1000).toString()
-    }, 1000)
-
-    setTimeout(() => {
-      clearInterval(updateAvailableTicketsInterval)
-      clearInterval(countDownTimer)
-    }, 120000)
-  }
-
-  document.querySelector('#restart').addEventListener('click', startCheckingTime)
-
+  const fbEventSocket = firebase.database().ref(`/tickets/${EVENT_ID}/tickets`).on('child_changed', function(snapshot) {
+    const val = snapshot.val()
+    updateSeat(val)
+  });
 
   function createSeats(updatedTickets) {
     seatPlan.tickets = updatedTickets
@@ -213,13 +174,21 @@
     }
   })
 
+  const seatTwo = Vue.component('seattwo', {
+    props: ['item', 'id', 'available'],
+    template: '<div class="seat">{{item.id}}</div>',
+  })
+
+
+  Vue.use(VueVirtualScroller)
+
   const seatPlan = new Vue({
-    el: '#seatplan',
+    el: '#vue',
     data: {
-      somedata: 'The data',
       tickets: tickets,
     }
-})
+  })
+
 </script>
 </body>
 </html>
