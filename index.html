@@ -45,6 +45,13 @@
   </style>
 </head>
 <body>
+<label for="eventSelector">Select Event</label>
+<select id="eventSelector">
+  <option value="event1">Event1 - 11 Tickets</option>
+  <option value="event2">Event2 - 651 Tickets</option>
+  <option value="event3">Event3 - 2001 Tickets</option>
+  <option value="event4">Event4 - 50,001 Tickets</option>
+</select>
 <h2>Tickets Available: <span id="totalAvailable">0</span></h2>
 <button id="restart">Restart Check (<span id="countdown">0</span>)</button>
 <div id="seatplan">
@@ -81,24 +88,45 @@
     });
   }
 
-//  createNewTickets('event4', 0, 50000)
+//  createNewTickets('event3', 0, 2000)
 
-  const EVENT_ID = 'event2'
+  let EVENT_ID = 'event1'
 
   let tickets = []
 
+  document.querySelector('#eventSelector').addEventListener('change', (event) => {
+    EVENT_ID = event.target.value
+    getEvent()
+  })
 
-  const fbEvents = firebase.database().ref(`/tickets/${EVENT_ID}`).once('value', function(snapshot) {
-    const val = snapshot.val()
 
-    // if there is less 1000 tickets
-    // display seats
-    // Otherwise just display total
-    if(val.tickets.length < 1000) {
-      createSeats(val.tickets)
-      createEventSocket()
+  function getEvent() {
+
+    if (EVENT_ID !== 'event4') {
+      firebase.database().ref(`/tickets/${EVENT_ID}`).once('value', function(snapshot) {
+        const val = snapshot.val()
+
+        // if there is less 1000 tickets
+        // display seats
+        // Otherwise just display total
+        if(val.tickets.length < 2100) {
+          createSeats(val.tickets)
+          createEventSocket()
+          document.querySelector('#restart').style.display = 'none';
+        } else {
+          // Check online for available tickets
+          // otherwise calcuated locally when seat updated
+          getAvailableTickets()
+        }
+      })
+    } else {
+      getAvailableTickets()
     }
-  });
+  }
+
+  getEvent()
+
+
 
   function createEventSocket() {
     firebase.database().ref(`/tickets/${EVENT_ID}/tickets`).on('child_changed', function(snapshot) {
@@ -108,14 +136,17 @@
   }
 
   function getAvailableTickets() {
+    // hide any seats already showing
+    seatPlan.tickets = []
+    document.querySelector('#restart').style.display = 'block';
+
+
     firebase.database().ref(`/tickets/${EVENT_ID}/availableTickets`).on('value', function(snapshot) {
       const val = snapshot.val()
       console.log('available', val)
       document.querySelector('#totalAvailable').innerText = val
     });
   }
-
-  getAvailableTickets()
 
   function updateAvailableTickets() {
     fetch(`https://us-central1-functions-56eb1.cloudfunctions.net/updateAvailableTickets?eventid=${EVENT_ID}`)
@@ -151,8 +182,16 @@
   document.querySelector('#restart').addEventListener('click', startCheckingTime)
 
 
-  function createSeats(updatedTickets) {
-    seatPlan.tickets = updatedTickets
+  function createSeats(newSeats) {
+    seatPlan.tickets = newSeats
+
+    let available = 0
+
+    seatPlan.tickets.forEach(function(item) {
+      item.available === true ? available++ : null
+    })
+
+    document.querySelector('#totalAvailable').innerText = available
   }
 
   function updateSeat(updatedSeat) {
@@ -165,6 +204,15 @@
       }
       return false
     })
+
+    let available = 0
+
+    seatPlan.tickets.forEach(function(item) {
+      item.available === true ? available++ : null
+    })
+
+    document.querySelector('#totalAvailable').innerText = available
+
   }
 
   function reserveTicket(ticketId) {
