@@ -4,11 +4,77 @@
   <meta charset="UTF-8">
   <title>Vueground</title>
   <script src="vendor/vue.js"></script>
+  <style>
+    .seat {
+      background: lightblue;
+      border: 1px solid black;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .seat:hover {
+      background: cornflowerblue;
+    }
+
+    .seatUnavailable {
+      background: red;
+      cursor: default;
+    }
+
+    .seatUnavailable:hover {
+      background: red;
+    }
+
+    .seatSelected {
+      background: green;
+      cursor: default;
+    }
+
+    .seatSelected:hover {
+      background: darkgreen;
+    }
+
+    #seatplan {
+      display: flex;
+      width: 660px;
+      flex-wrap: wrap;
+    }
+  </style>
 </head>
 <body>
+<div id="seatplan">
+  <seat v-for="value in tickets" :id="value.id" :available="value.available"></seat>
+</div>
 
 <script>
 
+  const tickets = [
+    {id: 1, available: false, reserved: true, purchased: false },
+    {id: 2, available: false, reserved: true, purchased: true },
+    {id: 3, available: true, reserved: false, purchased: false },
+    {id: 4, available: true, reserved: false, purchased: false },
+    {id: 5, available: true, reserved: false, purchased: false },
+  ]
+
+  const seat = Vue.component('seat', {
+    props: ['id', 'available'],
+    template: '<div class="seat" v-bind:class="{ seatUnavailable: !available }" v-on:click="clicked">{{id}}</div>',
+
+    methods: {
+      clicked: function() {
+        console.log('clicked')
+      }
+    }
+  })
+
+  const seatPlan = new Vue({
+    el: '#seatplan',
+    data: {
+      somedata: 'The data',
+      tickets: tickets,
+    }
+})
 </script>
 </body>
 </html>
