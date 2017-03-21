@@ -3,13 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>Vueground</title>
+  <script src="vendor/firebase.js"></script>
+  <script src="config.js"></script>
   <script src="vendor/vue.js"></script>
   <style>
     .seat {
       background: lightblue;
       border: 1px solid black;
-      width: 20px;
-      height: 20px;
+      width: 30px;
+      height: 30px;
       cursor: pointer;
     }
 
@@ -37,33 +39,118 @@
 
     #seatplan {
       display: flex;
-      width: 660px;
+      width: 1000px;
       flex-wrap: wrap;
     }
   </style>
 </head>
 <body>
 <div id="seatplan">
-  <seat v-for="value in tickets" :id="value.id" :available="value.available"></seat>
+  <seat v-for="value in tickets" :key="value.id" :id="value.id" :available="value.available"></seat>
 </div>
 
 <script>
+  firebase.initializeApp(FIREBASE_CONFIG);
 
-  const tickets = [
-    {id: 1, available: false, reserved: true, purchased: false },
-    {id: 2, available: false, reserved: true, purchased: true },
-    {id: 3, available: true, reserved: false, purchased: false },
-    {id: 4, available: true, reserved: false, purchased: false },
-    {id: 5, available: true, reserved: false, purchased: false },
-  ]
+  // Get a reference to the database service
+  const database = firebase.database();
+
+  const createNewTickets = (eventId, ticketStart, ticketStop ) => {
+
+    const tickets = {}
+
+    for (let i = ticketStart; i <= ticketStop; i++) {
+      tickets[i] = {
+        id: i,
+        available: true,
+        reserved: false,
+        purchased: false,
+      }
+    }
+
+    console.log(tickets)
+
+    firebase.database().ref('tickets/' + eventId).set({
+      ticketCount: ticketStop,
+      tickets: tickets,
+    });
+  }
+
+//  createNewTickets('event4', 0, 50000)
+
+  const EVENT_ID = 'event2'
+
+  let tickets = []
+
+
+  const fbEvents = firebase.database().ref(`/tickets/${EVENT_ID}`).once('value', function(snapshot) {
+    const val = snapshot.val()
+    createSeats(val.tickets)
+  });
+
+  const fbEventSocket = firebase.database().ref(`/tickets/${EVENT_ID}/tickets`).on('child_changed', function(snapshot) {
+    const val = snapshot.val()
+    updateSeat(val)
+  });
+
+  function createSeats(updatedTickets) {
+    seatPlan.tickets = updatedTickets
+  }
+
+  function updateSeat(updatedSeat) {
+    // Find the updated seat
+    seatPlan.tickets.find(function(value, i) {
+      if (value.id === updatedSeat.id) {
+        // Update the ticket. Need to place because Vue
+        seatPlan.tickets.splice(i, 1, updatedSeat)
+        return true
+      }
+      return false
+    })
+  }
+
+  function reserveTicket(ticketId) {
+    fetch(`https://us-central1-functions-56eb1.cloudfunctions.net/reserveTicket?ticketid=${ticketId}&eventid=${EVENT_ID}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if(!json || json.error) {
+          console.log('json error', json)
+        } else {
+          console.log('Saved', json)
+        }
+      }).catch(err => {
+      console.log('catch err', err)
+    })
+  }
+
+  function resetTicket(ticketId) {
+    fetch(`https://us-central1-functions-56eb1.cloudfunctions.net/resetTicket?ticketid=${ticketId}&eventid=${EVENT_ID}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if(!json || json.error) {
+          console.log('json error', json)
+        } else {
+          console.log('Saved', json)
+        }
+      }).catch(err => {
+      console.log('catch err', err)
+    })
+  }
+
+
 
   const seat = Vue.component('seat', {
     props: ['id', 'available'],
-    template: '<div class="seat" v-bind:class="{ seatUnavailable: !available }" v-on:click="clicked">{{id}}</div>',
+    template: '<div class="seat" v-bind:class="{ seatUnavailable: !available }" v-on:click="reserve(id)" v-on:contextmenu.prevent="reset(id)">{{id}}</div>',
 
     methods: {
-      clicked: function() {
-        console.log('clicked')
+      reserve: function(id) {
+        console.log('reserve', id)
+        reserveTicket(id)
+      },
+      reset: function(id) {
+        console.log('reset', id)
+        resetTicket(id)
       }
     }
   })
